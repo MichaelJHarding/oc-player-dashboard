@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1b2a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OC Players">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<title>OC Player Dashboard</title>
+<style>
+  :root{
+    --bg:#0d1b2a; --card:#16283d; --card2:#1d3450; --line:#27405e;
+    --text:#e8eef5; --muted:#8fa6bd; --accent:#f5b942; --teal:#3ec9c2;
+    --good:#2ecc71; --warn:#f0a531; --bad:#e8554d;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  body{padding-bottom:calc(64px + env(safe-area-inset-bottom));}
+  .topbar{position:sticky; top:0; z-index:10; background:rgba(13,27,42,.92);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    padding:calc(12px + env(safe-area-inset-top)) 16px 12px; display:flex; align-items:center; gap:10px;
+    border-bottom:1px solid var(--line);}
+  .topbar .ball{width:28px;height:28px;flex:0 0 auto;}
+  .topbar h1{font-size:17px; margin:0; font-weight:700; letter-spacing:.3px;}
+  .topbar .sub{margin-left:auto; font-size:11px; color:var(--muted);}
+  main{max-width:760px; margin:0 auto; padding:14px;}
+  section{display:none;}
+  section.active{display:block; animation:fade .18s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
+
+  select,input[type=search]{width:100%; padding:13px 14px; font-size:16px; border-radius:12px;
+    border:1px solid var(--line); background:var(--card); color:var(--text); appearance:none;
+    -webkit-appearance:none; outline:none;}
+  .selectwrap{position:relative; margin-bottom:14px;}
+  .selectwrap:after{content:"▾"; position:absolute; right:14px; top:50%; transform:translateY(-50%);
+    color:var(--muted); pointer-events:none;}
+
+  .kpis{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px;}
+  .kpi{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 8px; text-align:center;}
+  .kpi .v{font-size:24px; font-weight:800; color:var(--accent);}
+  .kpi .l{font-size:11px; color:var(--muted); margin-top:2px; text-transform:uppercase; letter-spacing:.5px;}
+
+  h2{font-size:13px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin:18px 2px 8px;}
+  .skill{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:10px;}
+  .skill .top{display:flex; align-items:baseline; gap:8px;}
+  .skill .name{font-weight:700; font-size:15px;}
+  .skill .counts{margin-left:auto; font-size:12px; color:var(--muted);}
+  .skill .pctv{font-size:22px; font-weight:800;}
+  .bar{height:8px; background:var(--card2); border-radius:99px; margin-top:9px; overflow:hidden;}
+  .bar i{display:block; height:100%; border-radius:99px;}
+  .skill .rank{font-size:11.5px; color:var(--muted); margin-top:6px;}
+  .c-good{color:var(--good);} .c-warn{color:var(--warn);} .c-bad{color:var(--bad);}
+  .b-good{background:var(--good);} .b-warn{background:var(--warn);} .b-bad{background:var(--bad);}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .mini{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:11px 13px;}
+  .mini .v{font-size:19px; font-weight:800;}
+  .mini .l{font-size:11px; color:var(--muted); margin-top:2px;}
+
+  .cmprow{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;}
+  .legend{display:flex; gap:16px; justify-content:center; font-size:12.5px; margin:6px 0 2px;}
+  .legend span{display:flex; align-items:center; gap:6px;}
+  .dot{width:10px; height:10px; border-radius:99px; display:inline-block;}
+  .radarwrap{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:8px 4px 2px; margin-bottom:12px;}
+  table.cmp{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; font-size:13.5px;}
+  table.cmp th, table.cmp td{padding:9px 8px; text-align:center; border-bottom:1px solid var(--line);}
+  table.cmp td:first-child{text-align:left; color:var(--muted); font-size:12.5px;}
+  table.cmp tr:last-child td{border-bottom:none;}
+  .win{font-weight:800; color:var(--accent);}
+
+  .lb{background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden;}
+  .lbrow{display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid var(--line); position:relative;}
+  .lbrow:last-child{border-bottom:none;}
+  .lbrow .rk{width:22px; color:var(--muted); font-size:12px; text-align:right;}
+  .lbrow .nm{flex:1; font-size:14px; z-index:1;}
+  .lbrow .vl{font-weight:800; font-size:14px; z-index:1;}
+  .lbrow .fill{position:absolute; left:0; top:0; bottom:0; background:rgba(245,185,66,.12); border-right:2px solid rgba(245,185,66,.45);}
+  .lbrow.me .nm{color:var(--accent); font-weight:700;}
+
+  .chips{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px;}
+
+  .tablewrap{overflow-x:auto; background:var(--card); border:1px solid var(--line); border-radius:14px;}
+  table.full{border-collapse:collapse; font-size:12.5px; min-width:1100px;}
+  table.full th{position:sticky; top:0; background:var(--card2); cursor:pointer; white-space:nowrap;}
+  table.full th, table.full td{padding:8px 9px; border-bottom:1px solid var(--line); text-align:right;}
+  table.full th:first-child, table.full td:first-child{text-align:left; position:sticky; left:0; background:var(--card2); white-space:nowrap;}
+  .note{font-size:11.5px; color:var(--muted); margin:8px 2px;}
+
+  .tabbar{position:fixed; left:0; right:0; bottom:0; display:flex; background:rgba(13,27,42,.95);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom); z-index:20;}
+  .tabbar button{flex:1; background:none; border:none; color:var(--muted); padding:9px 0 7px;
+    font-size:10.5px; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; font-family:inherit;}
+  .tabbar button svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;}
+  .tabbar button.on{color:var(--accent);}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <svg class="ball" viewBox="0 0 32 32"><ellipse cx="16" cy="16" rx="12" ry="7.5" transform="rotate(-38 16 16)" fill="#f5b942"/><path d="M9 22 Q16 16 23 10" stroke="#0d1b2a" stroke-width="1.6" fill="none"/></svg>
+  <h1>OC Player Dashboard</h1>
+  <span class="sub">Season stats</span>
+</header>
+
+<main>
+  <section id="tab-player" class="active">
+    <div class="selectwrap"><select id="playerSel"></select></div>
+    <div id="playerView"></div>
+  </section>
+
+  <section id="tab-compare">
+    <div class="cmprow">
+      <div class="selectwrap"><select id="cmpA"></select></div>
+      <div class="selectwrap"><select id="cmpB"></select></div>
+    </div>
+    <div id="cmpView"></div>
+  </section>
+
+  <section id="tab-squad">
+    <div id="squadChips"></div>
+    <h2>Leaderboard</h2>
+    <div class="selectwrap"><select id="lbMetric"></select></div>
+    <div id="lbView"></div>
+    <p class="note">Bars are relative to the squad leader. Percentages for players with very few actions can be misleading — check volumes on the Data tab.</p>
+  </section>
+
+  <section id="tab-data">
+    <input type="search" id="search" placeholder="Search player…" style="margin-bottom:12px">
+    <div class="tablewrap" id="dataView"></div>
+    <p class="note">Tap a column heading to sort. Scroll sideways for all stats.</p>
+  </section>
+</main>
+
+<nav class="tabbar">
+  <button data-tab="player" class="on"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/></svg>Player</button>
+  <button data-tab="compare"><svg viewBox="0 0 24 24"><path d="M7 4v16M17 4v16M7 8h10M7 16h10"/></svg>Compare</button>
+  <button data-tab="squad"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>Squad</button>
+  <button data-tab="data"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11M15 9v11"/></svg>Data</button>
+</nav>
+
+<script>
+const CSV = `name,try,linebreak,carry_pos,carry_neg,total_carries, pec_pos_carries ,tackle_pos,tackle_neg, pec_pos_tackle ,bounce_pos,bounce_neg, pec_pos_bounce ,ruck_pos,ruck_neg, pec_pos_ruck ,pass_pos,pass_neg, pec_pos_pass ,handling_error,penalty_for,pen_ag_attack,pen_ag_defence,turnover_for,turnover_against
+Joe Rickard,1,2,71,8,81,90%,127,10,93%,92,16,85%,141,6,96%,30,3,91%,6,14,5,18,10,6
+Denis O'Dwyer,1,0,81,21,102,79%,133,14,90%,92,20,82%,216,15,94%,27,4,87%,3,15,5,16,8,7
+Nesta Nyamakazi,1,0,14,1,15,93%,77,3,96%,56,8,88%,79,5,94%,1,0,100%,1,11,2,8,4,3
+Rob Magill,1,0,11,1,12,92%,45,4,92%,21,12,64%,78,12,87%,5,0,100%,1,9,1,4,6,1
+Evan Creaven,0,0,38,1,39,97%,60,7,90%,35,9,80%,88,9,91%,5,1,83%,3,4,2,9,0,5
+Billy Ryan,1,0,32,1,33,97%,86,9,91%,71,10,88%,141,8,95%,6,1,86%,2,5,2,8,3,4
+Casey Tanyi,1,1,21,2,24,92%,22,3,88%,11,5,69%,44,7,86%,4,4,50%,1,5,2,6,9,4
+Niall Hardiman,2,1,54,14,69,80%,132,7,95%,69,37,65%,177,9,95%,28,6,82%,6,2,4,5,3,14
+Declan Aylward,8,1,99,5,105,95%,122,9,93%,83,12,87%,107,5,96%,29,5,85%,6,7,2,7,21,6
+Alex McNamara,0,0,13,1,14,93%,23,2,92%,14,2,88%,20,1,95%,8,2,80%,3,1,0,1,3,3
+Lee O'Grady,1,1,12,1,14,93%,33,2,94%,26,3,90%,40,3,93%,10,0,100%,1,1,0,1,0,1
+Jason McCormack,0,0,14,0,14,100%,11,1,92%,5,2,71%,9,2,82%,3,0,100%,0,0,0,2,0,0
+Sam Kaghazchi,1,1,13,3,17,82%,17,6,74%,9,4,69%,47,4,92%,1,0,100%,0,3,0,1,2,1
+John Moloney,1,0,48,6,54,89%,139,9,94%,83,20,81%,188,18,91%,14,0,100%,8,6,1,5,20,5
+Sean Monaghan,2,2,65,6,73,92%,89,9,91%,44,15,75%,93,13,88%,13,2,87%,5,3,2,9,5,7
+John Toland,6,3,99,14,116,88%,186,26,88%,102,36,74%,297,17,95%,58,4,94%,8,11,3,12,10,14
+Colin Kelly,4,2,120,4,126,97%,142,9,94%,83,8,91%,124,5,96%,47,6,89%,8,11,5,9,19,13
+Dean O'Grady,4,1,126,9,136,93%,154,7,96%,79,18,81%,177,9,95%,31,3,91%,8,11,2,10,25,13
+Oisin Tolan,2,3,115,4,122,97%,156,12,93%,83,47,64%,158,14,92%,23,4,85%,8,14,3,11,35,11
+James Rael,2,1,62,3,66,95%,126,13,91%,70,24,74%,110,17,87%,25,2,93%,7,4,3,6,7,6
+John Lyons,4,2,87,4,93,96%,135,9,94%,92,10,90%,128,2,98%,24,2,92%,2,6,3,10,13,7
+Jack Dineen,0,2,72,4,78,95%,76,8,90%,31,25,55%,64,9,88%,10,4,71%,6,5,0,10,7,9
+Darragh McKeogh,0,1,18,0,19,100%,54,5,92%,37,2,95%,40,4,91%,2,0,100%,2,2,0,9,5,4
+Ciaran Heagney,0,2,48,1,51,98%,80,8,91%,61,8,88%,73,6,92%,17,1,94%,4,1,0,5,3,6
+James McKeogh,1,6,69,8,83,90%,193,9,96%,103,21,83%,248,22,92%,37,1,97%,5,10,2,3,30,2
+Brian Morrissey,3,4,40,0,44,100%,45,5,90%,30,4,88%,57,5,92%,8,1,89%,6,6,1,0,5,7
+Cillian Toland,3,2,76,1,79,99%,102,6,94%,63,17,79%,114,2,98%,13,1,93%,11,4,0,5,9,10
+Jack O'Neill,0,0,6,0,6,100%,12,1,92%,1,5,17%,15,0,100%,4,0,100%,0,0,0,1,1,0
+Jack Somers,0,0,11,0,11,100%,21,1,95%,13,2,87%,19,0,100%,3,0,100%,1,1,0,2,2,1
+Daithi Kilcummins,0,2,10,1,13,92%,38,7,84%,23,2,92%,32,1,97%,5,1,83%,3,0,0,2,4,3
+Yasin Browne,0,0,9,0,9,100%,2,0,100%,1,0,100%,6,1,86%,7,0,100%,0,0,0,0,2,0
+Kevin Doyle,0,0,18,3,21,86%,27,4,87%,10,9,53%,29,3,91%,6,1,86%,3,1,0,1,1,2
+Tevita Toia,0,0,9,0,9,100%,21,4,84%,8,4,67%,16,0,100%,3,2,60%,3,0,0,1,1,2
+Brendan McSweeney,0,0,2,0,2,100%,22,1,96%,13,3,81%,13,1,93%,1,0,100%,0,0,0,0,0,0
+Jamie Duggan,1,5,17,1,23,96%,12,0,100%,5,2,71%,6,0,100%,125,2,98%,2,1,1,2,1,3
+Gary Fitzgerald,1,3,15,3,21,86%,53,6,90%,25,3,89%,8,2,80%,383,7,98%,5,2,1,1,5,3
+Aaron Cosgrove,1,2,8,1,11,91%,20,7,74%,8,2,80%,9,2,82%,559,11,98%,5,5,0,2,0,6
+James O'Malley,0,0,1,1,2,50%,20,1,95%,17,1,94%,3,0,100%,151,4,97%,1,1,0,2,1,4
+Joe McEnery,1,3,31,9,43,79%,79,2,98%,35,3,92%,31,9,78%,511,13,98%,9,4,4,3,7,13
+Jake Kavanagh,0,0,3,0,3,100%,7,2,78%,4,1,80%,4,0,100%,103,1,99%,1,0,0,0,1,0
+Jeff Williams,3,5,26,14,45,69%,61,8,88%,25,2,93%,19,1,95%,146,12,92%,6,4,1,6,6,10
+Glen Kelly,2,4,38,9,51,82%,76,6,93%,40,8,83%,30,6,83%,95,7,93%,7,3,2,4,5,8
+Ben Davey,1,3,9,1,13,92%,22,6,79%,3,0,100%,9,1,90%,95,9,91%,1,0,0,1,4,5
+John Hurley,1,3,26,4,33,88%,39,11,78%,16,2,89%,11,1,92%,81,5,94%,7,2,0,8,3,6
+Michael Cleary,2,1,14,1,16,94%,21,5,81%,11,0,100%,7,0,100%,138,4,97%,3,1,1,1,3,3
+Sean Donnarumma,5,12,35,5,52,90%,39,2,95%,21,0,100%,40,0,100%,18,2,90%,5,3,2,2,4,9
+Darragh Long,2,2,51,0,53,100%,60,3,95%,46,5,90%,57,4,93%,30,1,97%,3,2,0,2,4,3
+Jason Aylward,1,3,54,9,66,86%,73,10,88%,49,7,88%,66,6,92%,79,5,94%,11,2,1,0,6,15
+Timmy Duggan,5,15,81,5,101,95%,42,17,71%,26,3,90%,40,4,91%,23,8,74%,9,3,1,1,4,13
+Brian Molloy,3,11,62,8,81,90%,102,28,78%,73,4,95%,76,13,85%,42,7,86%,12,4,4,8,6,13
+Werner Hoffman,0,3,34,4,41,90%,78,3,96%,50,3,94%,72,6,92%,46,6,88%,4,1,1,1,7,7
+Conor Hogan,0,0,28,0,28,100%,10,0,100%,7,1,88%,13,2,87%,14,2,88%,0,4,0,0,2,2
+Jack Neilon,5,7,43,0,50,100%,78,8,91%,63,4,94%,65,2,97%,14,1,93%,5,2,1,4,5,6
+Dan Hurley,4,9,70,4,83,95%,50,4,93%,9,1,90%,35,7,83%,18,2,90%,10,9,2,1,8,10
+Daithi Byrnes,1,3,46,3,52,94%,63,3,95%,44,4,92%,33,3,92%,18,4,82%,4,3,2,1,7,4
+Stephen Kiely,7,14,82,3,99,97%,54,14,79%,19,3,86%,39,3,93%,23,3,88%,13,11,3,7,17,11
+Alan Roche,5,5,40,2,47,96%,29,2,94%,26,1,96%,41,3,93%,32,2,94%,7,2,0,0,2,12
+Paul McNamara,3,1,45,1,47,98%,96,10,91%,66,4,94%,63,8,89%,28,5,85%,10,1,2,3,8,13
+Cathal Monaghan,2,1,9,0,10,100%,29,8,78%,13,2,87%,23,4,85%,24,3,89%,3,1,0,1,2,5
+Larry Hanley,1,5,23,1,29,97%,43,4,91%,20,3,87%,31,4,89%,21,7,75%,3,1,1,3,2,10
+Jack O'Mahony,1,4,11,0,15,100%,13,1,93%,9,0,100%,5,0,100%,14,2,88%,3,0,1,1,2,2
+Harry Lynch,2,1,12,1,14,93%,5,5,50%,5,0,100%,8,0,100%,2,0,100%,3,0,0,0,0,1`;
+
+// ---------- parse ----------
+const lines = CSV.trim().split("\n");
+const headers = lines[0].split(",").map(h => h.trim());
+const players = lines.slice(1).map(line => {
+  const cells = line.split(",");
+  const p = {};
+  headers.forEach((h, i) => {
+    let v = (cells[i] ?? "").trim();
+    if (h !== "name") v = v.endsWith("%") ? parseFloat(v) : Number(v);
+    p[h] = v;
+  });
+  return p;
+});
+players.sort((a, b) => a.name.localeCompare(b.name));
+const N = players.length;
+
+const SKILLS = [
+  {label:"Carrying",       pos:"carry_pos",  neg:"carry_neg",  pct:"pec_pos_carries", g:80, a:70},
+  {label:"Tackling",       pos:"tackle_pos", neg:"tackle_neg", pct:"pec_pos_tackle",  g:80, a:70},
+  {label:"Bounce to Feet", pos:"bounce_pos", neg:"bounce_neg", pct:"pec_pos_bounce",  g:90, a:85},
+  {label:"Ruck",           pos:"ruck_pos",   neg:"ruck_neg",   pct:"pec_pos_ruck",    g:90, a:75},
+  {label:"Passing",        pos:"pass_pos",   neg:"pass_neg",   pct:"pec_pos_pass",    g:90, a:85},
+];
+
+const LB_METRICS = [
+  {key:"try",              label:"Tries",                       dir:"desc"},
+  {key:"linebreak",        label:"Linebreaks",                  dir:"desc"},
+  {key:"total_carries",    label:"Total Carries",               dir:"desc"},
+  {key:"pec_pos_carries",  label:"Carry %",                     dir:"desc", pct:true},
+  {key:"tackle_pos",       label:"Positive Tackles",            dir:"desc"},
+  {key:"pec_pos_tackle",   label:"Tackle %",                    dir:"desc", pct:true},
+  {key:"pec_pos_bounce",   label:"Bounce to Feet %",            dir:"desc", pct:true},
+  {key:"ruck_pos",         label:"Positive Rucks",              dir:"desc"},
+  {key:"pec_pos_ruck",     label:"Ruck %",                      dir:"desc", pct:true},
+  {key:"pass_pos",         label:"Positive Passes",             dir:"desc"},
+  {key:"pec_pos_pass",     label:"Pass %",                      dir:"desc", pct:true},
+  {key:"turnover_for",     label:"Turnovers Won",               dir:"desc"},
+  {key:"penalty_for",      label:"Penalties Won",               dir:"desc"},
+  {key:"handling_error",   label:"Handling Errors (fewest first)", dir:"asc"},
+  {key:"turnover_against", label:"Turnovers Conceded (fewest first)", dir:"asc"},
+];
+
+function colorClass(v, g, a){ return v >= g ? "good" : v >= a ? "warn" : "bad"; }
+function beats(key, v, lowerBetter=false){
+  const beat = players.filter(p => lowerBetter ? p[key] > v : p[key] < v).length;
+  return Math.round(beat / (N - 1) * 100);
+}
+function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+
+// ---------- tabs ----------
+document.querySelectorAll(".tabbar button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tabbar button").forEach(b => b.classList.remove("on"));
+    btn.classList.add("on");
+    document.querySelectorAll("main section").forEach(s => s.classList.remove("active"));
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+    window.scrollTo(0, 0);
+  });
+});
+
+// ---------- player tab ----------
+const playerSel = document.getElementById("playerSel");
+players.forEach(p => playerSel.add(new Option(p.name, p.name)));
+playerSel.addEventListener("change", renderPlayer);
+
+function renderPlayer(){
+  const p = players.find(x => x.name === playerSel.value);
+  let html = `
+    <div class="kpis">
+      <div class="kpi"><div class="v">${p.try}</div><div class="l">Tries</div></div>
+      <div class="kpi"><div class="v">${p.linebreak}</div><div class="l">Linebreaks</div></div>
+      <div class="kpi"><div class="v">${p.total_carries}</div><div class="l">Carries</div></div>
+    </div>
+    <h2>Skills</h2>`;
+  SKILLS.forEach(s => {
+    const v = p[s.pct], c = colorClass(v, s.g, s.a), bt = beats(s.pct, v);
+    html += `
+      <div class="skill">
+        <div class="top">
+          <span class="name">${s.label}</span>
+          <span class="pctv c-${c}">${v}%</span>
+          <span class="counts">${p[s.pos]} pos · ${p[s.neg]} neg</span>
+        </div>
+        <div class="bar"><i class="b-${c}" style="width:${v}%"></i></div>
+        <div class="rank">Better than ${bt}% of the squad</div>
+      </div>`;
+  });
+  html += `
+    <h2>Discipline &amp; Ball Security</h2>
+    <div class="grid2">
+      <div class="mini"><div class="v c-good">${p.penalty_for}</div><div class="l">Penalties won</div></div>
+      <div class="mini"><div class="v c-warn">${p.handling_error}</div><div class="l">Handling errors</div></div>
+      <div class="mini"><div class="v c-bad">${p.pen_ag_attack}</div><div class="l">Pens conceded — attack</div></div>
+      <div class="mini"><div class="v c-bad">${p.pen_ag_defence}</div><div class="l">Pens conceded — defence</div></div>
+      <div class="mini"><div class="v c-good">${p.turnover_for}</div><div class="l">Turnovers won</div></div>
+      <div class="mini"><div class="v c-bad">${p.turnover_against}</div><div class="l">Turnovers conceded</div></div>
+    </div>`;
+  document.getElementById("playerView").innerHTML = html;
+}
+
+// ---------- compare tab ----------
+const cmpA = document.getElementById("cmpA"), cmpB = document.getElementById("cmpB");
+players.forEach(p => { cmpA.add(new Option(p.name, p.name)); cmpB.add(new Option(p.name, p.name)); });
+cmpB.selectedIndex = Math.min(1, N - 1);
+cmpA.addEventListener("change", renderCompare);
+cmpB.addEventListener("change", renderCompare);
+
+function radarSVG(a, b){
+  const cx = 170, cy = 150, R = 105, lo = 40, hi = 100;
+  const axes = SKILLS.map((s, i) => {
+    const ang = -Math.PI / 2 + i * 2 * Math.PI / SKILLS.length;
+    return {s, cos: Math.cos(ang), sin: Math.sin(ang)};
+  });
+  const pt = (ax, v) => {
+    const r = R * Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
+    return (cx + ax.cos * r).toFixed(1) + "," + (cy + ax.sin * r).toFixed(1);
+  };
+  let grid = "";
+  [40, 55, 70, 85, 100].forEach(g => {
+    const pts = axes.map(ax => pt(ax, g)).join(" ");
+    grid += `<polygon points="${pts}" fill="none" stroke="#27405e" stroke-width="1"/>`;
+  });
+  let spokes = "", labels = "";
+  axes.forEach(ax => {
+    spokes += `<line x1="${cx}" y1="${cy}" x2="${cx + ax.cos * R}" y2="${cy + ax.sin * R}" stroke="#27405e"/>`;
+    const lx = cx + ax.cos * (R + 22), ly = cy + ax.sin * (R + 16);
+    labels += `<text x="${lx}" y="${ly}" font-size="11" fill="#8fa6bd" text-anchor="middle">${ax.s.label.replace("Bounce to Feet","Bounce")}</text>`;
+  });
+  const poly = (p, col) =>
+    `<polygon points="${axes.map(ax => pt(ax, p[ax.s.pct])).join(" ")}" fill="${col}33" stroke="${col}" stroke-width="2"/>`;
+  return `<svg viewBox="0 0 340 300" style="width:100%">${grid}${spokes}${labels}${poly(a, "#f5b942")}${poly(b, "#3ec9c2")}</svg>`;
+}
+
+function renderCompare(){
+  const a = players.find(x => x.name === cmpA.value);
+  const b = players.find(x => x.name === cmpB.value);
+  const rows = [
+    ["Tries", "try"], ["Linebreaks", "linebreak"], ["Total carries", "total_carries"],
+    ["Carry %", "pec_pos_carries", "%"], ["Positive tackles", "tackle_pos"], ["Tackle %", "pec_pos_tackle", "%"],
+    ["Bounce to feet %", "pec_pos_bounce", "%"], ["Positive rucks", "ruck_pos"], ["Ruck %", "pec_pos_ruck", "%"],
+    ["Positive passes", "pass_pos"], ["Pass %", "pec_pos_pass", "%"],
+    ["Turnovers won", "turnover_for"], ["Penalties won", "penalty_for"],
+    ["Handling errors", "handling_error", "", true], ["Turnovers conceded", "turnover_against", "", true],
+  ];
+  let tbl = `<table class="cmp"><tr><td></td><th>${esc(a.name)}</th><th>${esc(b.name)}</th></tr>`;
+  rows.forEach(([label, key, suf = "", lowerBetter = false]) => {
+    const av = a[key], bv = b[key];
+    const aWin = lowerBetter ? av < bv : av > bv;
+    const bWin = lowerBetter ? bv < av : bv > av;
+    tbl += `<tr><td>${label}</td><td class="${aWin ? "win" : ""}">${av}${suf}</td><td class="${bWin ? "win" : ""}">${bv}${suf}</td></tr>`;
+  });
+  tbl += `</table>`;
+  document.getElementById("cmpView").innerHTML = `
+    <div class="radarwrap">
+      <div class="legend">
+        <span><i class="dot" style="background:#f5b942"></i>${esc(a.name)}</span>
+        <span><i class="dot" style="background:#3ec9c2"></i>${esc(b.name)}</span>
+      </div>
+      ${radarSVG(a, b)}
+      <p class="note" style="text-align:center">Skill success rates — radar scale 40–100%</p>
+    </div>` + tbl;
+}
+
+// ---------- squad tab ----------
+function renderChips(){
+  const sum = k => players.reduce((t, p) => t + p[k], 0);
+  const teamPct = (pos, neg) => Math.round(sum(pos) / (sum(pos) + sum(neg)) * 100);
+  document.getElementById("squadChips").innerHTML = `
+    <h2>Team Totals</h2>
+    <div class="chips">
+      <div class="kpi"><div class="v">${sum("try")}</div><div class="l">Tries</div></div>
+      <div class="kpi"><div class="v">${sum("linebreak")}</div><div class="l">Linebreaks</div></div>
+      <div class="kpi"><div class="v">${sum("total_carries")}</div><div class="l">Carries</div></div>
+      <div class="kpi"><div class="v">${teamPct("tackle_pos","tackle_neg")}%</div><div class="l">Team tackle</div></div>
+      <div class="kpi"><div class="v">${teamPct("ruck_pos","ruck_neg")}%</div><div class="l">Team ruck</div></div>
+      <div class="kpi"><div class="v">${sum("turnover_for")}</div><div class="l">Turnovers won</div></div>
+    </div>`;
+}
+const lbMetric = document.getElementById("lbMetric");
+LB_METRICS.forEach((m, i) => lbMetric.add(new Option(m.label, i)));
+lbMetric.addEventListener("change", renderLB);
+
+function renderLB(){
+  const m = LB_METRICS[+lbMetric.value];
+  const sorted = [...players].sort((x, y) => m.dir === "asc" ? x[m.key] - y[m.key] : y[m.key] - x[m.key]);
+  const top = sorted.slice(0, 15);
+  const max = Math.max(...players.map(p => p[m.key])) || 1;
+  let html = `<div class="lb">`;
+  top.forEach((p, i) => {
+    const w = Math.round(p[m.key] / max * 100);
+    html += `
+      <div class="lbrow">
+        <div class="fill" style="width:${w}%"></div>
+        <span class="rk">${i + 1}</span>
+        <span class="nm">${esc(p.name)}</span>
+        <span class="vl">${p[m.key]}${m.pct ? "%" : ""}</span>
+      </div>`;
+  });
+  html += `</div>`;
+  document.getElementById("lbView").innerHTML = html;
+}
+
+// ---------- data tab ----------
+const COLS = [
+  ["name","Player"],["try","Tries"],["linebreak","LB"],["total_carries","Carries"],["pec_pos_carries","Carry %"],
+  ["tackle_pos","Tkl +"],["tackle_neg","Tkl −"],["pec_pos_tackle","Tkl %"],
+  ["bounce_pos","Bnc +"],["bounce_neg","Bnc −"],["pec_pos_bounce","Bnc %"],
+  ["ruck_pos","Ruck +"],["ruck_neg","Ruck −"],["pec_pos_ruck","Ruck %"],
+  ["pass_pos","Pass +"],["pass_neg","Pass −"],["pec_pos_pass","Pass %"],
+  ["handling_error","HE"],["penalty_for","Pen +"],["pen_ag_attack","Pen A"],["pen_ag_defence","Pen D"],
+  ["turnover_for","TO +"],["turnover_against","TO −"],
+];
+let sortKey = "name", sortDir = 1;
+document.getElementById("search").addEventListener("input", renderData);
+
+function renderData(){
+  const q = document.getElementById("search").value.toLowerCase();
+  let rows = players.filter(p => p.name.toLowerCase().includes(q));
+  rows.sort((a, b) => {
+    const av = a[sortKey], bv = b[sortKey];
+    return (typeof av === "string" ? av.localeCompare(bv) : av - bv) * sortDir;
+  });
+  let html = `<table class="full"><tr>` +
+    COLS.map(([k, l]) => `<th data-k="${k}">${l}${k === sortKey ? (sortDir > 0 ? " ▲" : " ▼") : ""}</th>`).join("") +
+    `</tr>`;
+  rows.forEach(p => {
+    html += `<tr>` + COLS.map(([k]) =>
+      `<td>${k === "name" ? esc(p[k]) : p[k]}${k.startsWith("pec") ? "%" : ""}</td>`).join("") + `</tr>`;
+  });
+  html += `</table>`;
+  document.getElementById("dataView").innerHTML = html;
+  document.querySelectorAll("th[data-k]").forEach(th => th.addEventListener("click", () => {
+    const k = th.dataset.k;
+    if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = k === "name" ? 1 : -1; }
+    renderData();
+  }));
+}
+
+renderPlayer(); renderCompare(); renderChips(); renderLB(); renderData();
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+</script>
+</body>
+</html>
