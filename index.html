@@ -254,7 +254,7 @@ const LB_METRICS = [
     eligible:p=>p.pass_pos+p.pass_neg>=15, detail:p=>p.pass_pos+"/"+(p.pass_pos+p.pass_neg)},
   {key:"turnover_for",     label:"Turnovers Won",               dir:"desc"},
   {key:"penalty_for",      label:"Penalties Won",               dir:"desc"},
-  {key:"handling_error",   label:"Handling Errors (fewest first)", dir:"asc"},
+  {key:"handling_error",   label:"Handling Errors (most first)", dir:"desc"},
   {key:"turnover_against", label:"Turnovers Conceded (fewest first)", dir:"asc"},
 ];
 
