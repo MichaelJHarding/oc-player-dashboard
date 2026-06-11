@@ -255,7 +255,7 @@ const LB_METRICS = [
   {key:"turnover_for",     label:"Turnovers Won",               dir:"desc"},
   {key:"penalty_for",      label:"Penalties Won",               dir:"desc"},
   {key:"handling_error",   label:"Handling Errors (most first)", dir:"desc"},
-  {key:"turnover_against", label:"Turnovers Conceded (fewest first)", dir:"asc"},
+  {key:"turnover_against", label:"Turnovers Conceded (most first)", dir:"desc"},
 ];
 
 function colorClass(v, g, a){ return v >= g ? "good" : v >= a ? "warn" : "bad"; }
