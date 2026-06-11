@@ -127,7 +127,7 @@
     <h2>Leaderboard</h2>
     <div class="selectwrap"><select id="lbMetric"></select></div>
     <div id="lbView"></div>
-    <p class="note">Bars are relative to the squad leader. Percentages for players with very few actions can be misleading — check volumes on the Data tab.</p>
+    <p class="note">Bars are relative to the squad leader. Percentage leaderboards only include players with at least 15 involvements in that skill — except Bottom 15 Bounce Rate, which includes everyone. The small numbers beside each name are positive/total actions.</p>
   </section>
 
   <section id="tab-data">
@@ -237,14 +237,21 @@ const LB_METRICS = [
   {key:"try",              label:"Tries",                       dir:"desc"},
   {key:"linebreak",        label:"Linebreaks",                  dir:"desc"},
   {key:"total_carries",    label:"Total Carries",               dir:"desc"},
-  {key:"pec_pos_carries",  label:"Carry %",                     dir:"desc", pct:true},
+  {key:"pec_pos_carries",  label:"Carry % (min 15 carries)",    dir:"desc", pct:true,
+    eligible:p=>p.total_carries>=15, detail:p=>p.carry_pos+"/"+(p.carry_pos+p.carry_neg)},
   {key:"tackle_pos",       label:"Positive Tackles",            dir:"desc"},
-  {key:"pec_pos_tackle",   label:"Tackle %",                    dir:"desc", pct:true},
-  {key:"pec_pos_bounce",   label:"Bounce to Feet %",            dir:"desc", pct:true},
+  {key:"pec_pos_tackle",   label:"Tackle % (min 15 tackles)",   dir:"desc", pct:true,
+    eligible:p=>p.tackle_pos+p.tackle_neg>=15, detail:p=>p.tackle_pos+"/"+(p.tackle_pos+p.tackle_neg)},
+  {key:"pec_pos_bounce",   label:"Top 15 Bounce Rate (min 15 bounces)", dir:"desc", pct:true,
+    eligible:p=>p.bounce_pos+p.bounce_neg>=15, detail:p=>p.bounce_pos+"/"+(p.bounce_pos+p.bounce_neg)},
+  {key:"pec_pos_bounce",   label:"Bottom 15 Bounce Rate (lowest first, no minimum)", dir:"asc", pct:true,
+    eligible:p=>p.bounce_pos+p.bounce_neg>0, detail:p=>p.bounce_pos+"/"+(p.bounce_pos+p.bounce_neg)},
   {key:"ruck_pos",         label:"Positive Rucks",              dir:"desc"},
-  {key:"pec_pos_ruck",     label:"Ruck %",                      dir:"desc", pct:true},
+  {key:"pec_pos_ruck",     label:"Ruck % (min 15 rucks)",       dir:"desc", pct:true,
+    eligible:p=>p.ruck_pos+p.ruck_neg>=15, detail:p=>p.ruck_pos+"/"+(p.ruck_pos+p.ruck_neg)},
   {key:"pass_pos",         label:"Positive Passes",             dir:"desc"},
-  {key:"pec_pos_pass",     label:"Pass %",                      dir:"desc", pct:true},
+  {key:"pec_pos_pass",     label:"Pass % (min 15 passes)",      dir:"desc", pct:true,
+    eligible:p=>p.pass_pos+p.pass_neg>=15, detail:p=>p.pass_pos+"/"+(p.pass_pos+p.pass_neg)},
   {key:"turnover_for",     label:"Turnovers Won",               dir:"desc"},
   {key:"penalty_for",      label:"Penalties Won",               dir:"desc"},
   {key:"handling_error",   label:"Handling Errors (fewest first)", dir:"asc"},
@@ -393,17 +400,19 @@ lbMetric.addEventListener("change", renderLB);
 
 function renderLB(){
   const m = LB_METRICS[+lbMetric.value];
-  const sorted = [...players].sort((x, y) => m.dir === "asc" ? x[m.key] - y[m.key] : y[m.key] - x[m.key]);
+  const pool = m.eligible ? players.filter(m.eligible) : [...players];
+  const sorted = pool.sort((x, y) => m.dir === "asc" ? x[m.key] - y[m.key] : y[m.key] - x[m.key]);
   const top = sorted.slice(0, 15);
-  const max = Math.max(...players.map(p => p[m.key])) || 1;
+  const max = Math.max(...pool.map(p => p[m.key])) || 1;
   let html = `<div class="lb">`;
   top.forEach((p, i) => {
     const w = Math.round(p[m.key] / max * 100);
+    const det = m.detail ? ` <span style="color:var(--muted);font-size:11px">${m.detail(p)}</span>` : "";
     html += `
       <div class="lbrow">
         <div class="fill" style="width:${w}%"></div>
         <span class="rk">${i + 1}</span>
-        <span class="nm">${esc(p.name)}</span>
+        <span class="nm">${esc(p.name)}${det}</span>
         <span class="vl">${p[m.key]}${m.pct ? "%" : ""}</span>
       </div>`;
   });
