@@ -5,3 +5,4 @@ make_icons.py
 *.py
 __pycache__/
 data.js
+match_rounds.json
