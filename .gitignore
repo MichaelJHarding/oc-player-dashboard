@@ -6,3 +6,4 @@ make_icons.py
 __pycache__/
 data.js
 match_rounds.json
+.last_deploy_hash
